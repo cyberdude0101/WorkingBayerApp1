@@ -1,0 +1,85 @@
+// API key for http://openlayers.org. Please get your own at
+// http://bingmapsportal.com/ and use that instead.
+
+
+// initialize map when page ready
+var map;
+var gg = new OpenLayers.Projection("EPSG:4326");
+var sm = new OpenLayers.Projection("EPSG:900913");
+
+var init = function (onSelectFeatureFunction) {
+
+    
+
+    var geolocate = new OpenLayers.Control.Geolocate({
+        id: 'locate-control',
+        geolocationOptions: {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 7000
+        }
+    });
+    // create map
+    map = new OpenLayers.Map({
+        div: "map",
+        theme: null,
+        projection: sm,
+        numZoomLevels: 18,
+        controls: [
+            new OpenLayers.Control.Attribution(),
+            new OpenLayers.Control.TouchNavigation({
+                dragPanOptions: {
+                    enableKinetic: true,
+                    zoomWheelEnabled: true
+                }
+            }),
+        
+            geolocate,
+            
+        ],
+        layers: [
+            new OpenLayers.Layer.OSM("OpenStreetMap", null, {
+                transitionEffect: 'resize'
+            }),
+          ],
+        center: new OpenLayers.LonLat(0, 0),
+        zoom: 1
+    });
+
+    var style = {
+        fillOpacity: 0.1,
+        fillColor: '#000',
+        strokeColor: '#f00',
+        strokeOpacity: 0.6
+    };
+    geolocate.events.register("locationupdated", this, function(e) {
+        vector.removeAllFeatures();
+        vector.addFeatures([
+            new OpenLayers.Feature.Vector(
+                e.point,
+                {},
+                {
+                    graphicName: 'cross',
+                    strokeColor: '#f00',
+                    strokeWidth: 2,
+                    fillOpacity: 0,
+                    pointRadius: 10
+                }
+            ),
+            new OpenLayers.Feature.Vector(
+                OpenLayers.Geometry.Polygon.createRegularPolygon(
+                    new OpenLayers.Geometry.Point(e.point.x, e.point.y),
+                    e.position.coords.accuracy / 2,
+                    50,
+                    0
+                ),
+                {},
+                style
+            )
+        ]);
+        map.zoomToExtent(vector.getDataExtent());
+    });
+
+
+
+};
