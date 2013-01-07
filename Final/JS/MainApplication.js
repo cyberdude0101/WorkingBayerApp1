@@ -4,6 +4,37 @@
 var map;
 var gg = new OpenLayers.Projection("EPSG:4326");
 var sm = new OpenLayers.Projection("EPSG:900913");
+ var WeatherStyleMap = new OpenLayers.StyleMap(
+		new OpenLayers.Style({
+			fontColor: "Yellow",
+			fontSize: "20px",
+			fontFamily: "Arial",
+			graphicXOffset: 0,
+			graphicYOffset: 0,
+			labelAlign: "lt",
+			labelXOffset: "40",
+			labelYOffset: "-15",
+			labelOutlineColor: "Green",
+			labelOutlineWidth: 3,
+			externalGraphic: "${icon}",
+			graphicWidth: 50,
+                	label : "${myCustomLabel}"
+		},
+		{
+		context: 
+		{
+			icon:  function(feature) {
+				return feature.layer.options.getIcon(feature.attributes.station);
+			},
+			myCustomLabel:  function(feature) {
+			    var Farenheit = ((feature.attributes.station.main.temp-273.15)*1.8)+32;
+				return  Math.round(Farenheit) + '°F';
+			}
+
+		}
+	}
+	));
+
  
  //------------gauje.js-----------------------------------------------------------
  
@@ -15,9 +46,9 @@ var MesoGauge = gauge.add(document.getElementById('MesoGaugeDiv'));
 var DD60Gauge = gauge.add(document.getElementById('DD60GaugeDiv'));
 var MesoTemp;
 var canvascheck = document.createElement('canvas');
-gauge.add($("NWSGaugeDiv"), {width:30, height:300, name: 'NWSGauge', vertical: true, limit: true, gradient: true, scale: 10, colors:['#E31A1C','#FC4E2A','#FEB24C','#D9F0A3','#C8F60F','#83F60F'], values:[35,10,5,10,10,30,5]});
-gauge.add($("MesoGaugeDiv"), {width:30, height:300, name: 'MesoGauge', vertical: true, limit: true, gradient: true, scale: 10, colors:['#E31A1C','#FC4E2A','#E67451','#ADDD8E','#F7FCB9','#C8F60F','#83F60F'], values:[20,20,20,2,5,18,14]});
-gauge.add($("DD60GaugeDiv"), {width:30, height:300, name: 'DD60Gauge', vertical: true, limit: true, gradient: true, scale: 10, colors:['#C11B17','#F66F0F','#F6BD0F','#C8F60F','#83F60F'], values:[10,10,10,10,10,10]});
+gauge.add($("NWSGaugeDiv"), {width:30, height:230, name: 'NWSGauge', vertical: true, limit: true, gradient: true, scale: 10, colors:['#E31A1C','#FC4E2A','#FEB24C','#D9F0A3','#C8F60F','#83F60F'], values:[35,10,5,10,10,30,5]});
+gauge.add($("MesoGaugeDiv"), {width:30, height:230, name: 'MesoGauge', vertical: true, limit: true, gradient: true, scale: 10, colors:['#E31A1C','#FC4E2A','#E67451','#ADDD8E','#F7FCB9','#C8F60F','#83F60F'], values:[20,20,20,2,5,18,14]});
+gauge.add($("DD60GaugeDiv"), {width:30, height:230, name: 'DD60Gauge', vertical: true, limit: true, gradient: true, scale: 10, colors:['#C11B17','#F66F0F','#F6BD0F','#C8F60F','#83F60F'], values:[10,10,10,10,10,10]});
 
 }
 
@@ -61,42 +92,15 @@ var init = function (onSelectFeatureFunction) {
         "Google Hybrid",
         {type: google.maps.MapTypeId.HYBRID, numZoomLevels: 22, visibility: true}
     );
+// Make weather layer. Server clastering of markers is using.
+	var city = new OpenLayers.Layer.Vector.OWMWeather("Current Weather", {styleMap: WeatherStyleMap});
 
          
 var styleMap = new OpenLayers.StyleMap(OpenLayers.Util.applyDefaults(
         {fillColor: "green", stroke: "true", fillOpacity: 0, strokeColor:'#66FFFF', strokeDashstyle: "solid",strokeWidth:5},
         OpenLayers.Feature.Vector.style["default"]));
 var select = new OpenLayers.Layer.Vector("Selected Grid",{styleMap: styleMap});    
-var pulsate = function(feature) {
-    var point = feature.geometry.getCentroid(),
-        bounds = feature.geometry.getBounds(),
-        radius = Math.abs((bounds.right - bounds.left)/2),
-        count = 0,
-        grow = 'up';
-
-    var resize = function(){
-        if (count>16) {
-            clearInterval(window.resizeInterval);
-        }
-        var interval = radius * 0.03;
-        var ratio = interval/radius;
-        switch(count) {
-            case 4:
-            case 12:
-                grow = 'down'; break;
-            case 8:
-                grow = 'up'; break;
-        }
-        if (grow!=='up') {
-            ratio = - Math.abs(ratio);
-        }
-        feature.geometry.resize(1+ratio, point);
-        geolocategraphic.drawFeature(feature);
-        count++;
-    };
-    window.resizeInterval = window.setInterval(resize, 50, point, radius);
-};
-  var geolocate = new OpenLayers.Control.Geolocate({
+ var geolocate = new OpenLayers.Control.Geolocate({
         id: 'locate-control',
         geolocationOptions: {
             enableHighAccuracy: false,
@@ -137,7 +141,7 @@ var pulsate = function(feature) {
         if (firstGeolocation) {
     	 $j.mobile.hidePageLoadingMsg();
         map.zoomToExtent(geolocategraphic.getDataExtent());
-        pulsate(circle);
+       
         firstGeolocation = true;
         this.bind = true;
     }    });
@@ -156,7 +160,8 @@ var pulsate = function(feature) {
         layers: [
            
 			 select,
-        	 nwsgrid,
+			 city,
+        	 nwsgrid,        	 
              geolocategraphic,
              ghyb, 
              gphy,

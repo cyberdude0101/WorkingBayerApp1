@@ -2,7 +2,6 @@
 window.location.replace(window.location.href.split("#")[0] + "#mappage");
 
 var selectedFeature = null;
-
 // fix height of content
 function fixContentHeight() {
     var footer = $j("div[data-role='footer']:visible"),
